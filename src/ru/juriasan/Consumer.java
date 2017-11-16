@@ -6,7 +6,6 @@ import ru.juriasan.util.Parser;
 
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class Consumer implements Runnable {
