@@ -31,19 +31,35 @@ public class Parser {
         return map;
     }
 
+    private <K,V> Map<K, V> cloneMap(Map<K,V> old) {
+        try {
+            Map<K, V> newMap = old.getClass().newInstance();
+            newMap.putAll(old);
+            return newMap;
+        }
+        catch (Exception ex) {
+            return null;
+        }
+    }
+
     public void Parser(String html, Set<String> words, Set<Character> symbols) {
         this.html = html.toCharArray();
         this.wordsCount = buildCountMap(words);
         this.symbolsCount = buildCountMap(symbols);
     }
 
+    public Map<String, Integer> getWordsCount() {
+        return cloneMap(wordsCount);
+    }
+
+    public Map<Character, Integer> getSymbolsCount() {
+        return cloneMap(symbolsCount);
+    }
+
     private boolean isLetter(char letter) {
         return 'a' <=  letter && letter <= 'z' || 'A' <= letter && letter <= 'Z';
     }
-    private void checkEOF() throws Exception {
-        if (ch >= html.length || html[ch] == EOF)
-            invalidDocument();
-    }
+
     private void invalidDocument() throws Exception {
         throw new Exception("Document is invalid");
     }
@@ -114,26 +130,27 @@ public class Parser {
                     if (html[ch + 1] == SLASH) {
                         parseNodeName(true);
                         return;
-                    } else
-                        parseNode();
+                    } else parseNode();
                     break;
                 default: {
                     word = handleChar(word);
                     ch++;
-                }
+                } break;
             }
         }
     }
 
-    public void parse(boolean countWords, boolean countSymbols) throws Exception {
-        if (html.length == 0)
+    public void parse() throws Exception {
+        if (html.length == 0 || html[ch] == EOF)
             return;
         StringBuilder word = new StringBuilder();
         while(html[ch] != EOF) {
             switch (html[ch]) {
-                case NODE_BEGIN: parseNode();
-                default:
+                case NODE_BEGIN: parseNode(); break;
+                default: {
+                    word = handleChar(word);
                     ch++;
+                } break;
             }
         }
     }
