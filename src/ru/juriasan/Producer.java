@@ -85,7 +85,7 @@ public class Producer implements Callable<Set<Page>> {
             }
         }
         catch (InterruptedException e) {
-            System.out.println(String.format("Thread %d is interrupted.", this.threadNumber));
+            System.out.println(String.format("Producer thread %d is interrupted.", this.threadNumber));
             throw e;
         }
     }

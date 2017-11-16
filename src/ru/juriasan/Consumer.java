@@ -2,24 +2,33 @@ package ru.juriasan;
 
 import ru.juriasan.domain.Data;
 import ru.juriasan.domain.Page;
+import ru.juriasan.util.Parser;
 
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class Consumer implements Callable<Map<String, Data>> {
+public class Consumer implements Runnable {
 
-    private BlockingQueue<Data> output;
+    private BlockingQueue<Set<Data>> output;
     private long queryInterval;
     private int threadNumber;
     private List<Producer> subscriptions;
 
-    public Consumer(int threadNumber, long queryIntervalMillis, Producer... subscriptions) {
+    private Set<String> words;
+    private Set<Character> characters;
+
+    public Consumer(int threadNumber, long queryIntervalMillis,
+                    Set<String> words,
+                    Set<Character> characters,
+                    Producer... subscriptions) {
         this.threadNumber = threadNumber;
         this.queryInterval = queryIntervalMillis;
         output = new LinkedBlockingQueue<>();
         this.subscriptions = new LinkedList<>(Arrays.asList(subscriptions));
+        this.words = words;
+        this.characters = characters;
     }
 
     public synchronized void subscribe(Producer producer) {
@@ -30,26 +39,47 @@ public class Consumer implements Callable<Map<String, Data>> {
         this.subscriptions.remove(producer);
     }
 
+    private void putData(Set<Data> data) throws InterruptedException {
+        this.output.put(data);
+    }
+
+    public Set<Data> getData() throws InterruptedException {
+        return output.take();
+    }
+
     private Data handlePage(Page page) {
         try {
             String pageData = page.getData();
-            //... parse hml
+            Parser parser = new Parser(pageData, words, characters);
+            parser.parse();
+            return new Data(page.getUrl(), parser.getWordsCount(), parser.getSymbolsCount());
         }
-        catch (NullPointerException ex) {
-
+        catch (Exception ex) {
+            ex.printStackTrace();
+            return null;
         }
-        return null;
     }
 
     @Override
-    public Map<String, Data> call() throws Exception {
-        Map<String, Data> map = new HashMap<>();
-        for (Producer producer : this.subscriptions) {
-            Set<Page> pages = producer.getPages();
-            for (Page page : pages) {
-
+    public void run()  {
+        try {
+            while (true) {
+                for (Producer producer : this.subscriptions) {
+                    Set<Page> pages = producer.getPages();
+                    Set<Data> data = new HashSet<>();
+                    for (Page page : pages) {
+                        data.add(handlePage(page));
+                    }
+                    putData(data);
+                }
+                Thread.sleep(queryInterval);
             }
         }
-        return map;
+        catch (InterruptedException ex) {
+            System.out.println(String.format("Producer thread %d is interrupted.", this.threadNumber));
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 }

@@ -42,7 +42,7 @@ public class Parser {
         }
     }
 
-    public void Parser(String html, Set<String> words, Set<Character> symbols) {
+    public Parser(String html, Set<String> words, Set<Character> symbols) {
         this.html = html.toCharArray();
         this.wordsCount = buildCountMap(words);
         this.symbolsCount = buildCountMap(symbols);
