@@ -8,7 +8,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class Consumer extends Callable<Map<String, Data>> {
+public class Consumer implements Callable<Map<String, Data>> {
 
     private BlockingQueue<Data> output;
     private long queryInterval;
@@ -32,13 +32,15 @@ public class Consumer extends Callable<Map<String, Data>> {
 
     private Data handlePage(Page page) {
         try {
-            String data = page.getData();
+            String pageData = page.getData();
             //... parse hml
         }
         catch (NullPointerException ex) {
-            return null;
+
         }
+        return null;
     }
+
     @Override
     public Map<String, Data> call() throws Exception {
         Map<String, Data> map = new HashMap<>();
