@@ -32,6 +32,10 @@ public class Data {
         }
     }
 
+    public String getUrl() {
+        return this.url;
+    }
+
     private <K,V> Map<K, V> cloneMap(Map<K,V> old) throws Exception {
         Map<K,V> newMap = old.getClass().newInstance();
         newMap.putAll(old);

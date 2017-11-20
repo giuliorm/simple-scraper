@@ -14,7 +14,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class Producer implements Callable<Set<Page>> {
+public class Producer implements Runnable {
 
     private Set<String> urls;
     private BlockingQueue<Set<Page>> queue;
@@ -53,7 +53,6 @@ public class Producer implements Callable<Set<Page>> {
             String line;
             while ((line = rd.readLine()) != null) {
                 response.append(line);
-                response.append('\r');
             }
             rd.close();
             return response.toString();
@@ -68,7 +67,7 @@ public class Producer implements Callable<Set<Page>> {
     }
 
     @Override
-    public Set<Page> call() throws Exception {
+    public void run()  {
         try {
             while (true) {
                 Set<Page> pages = new HashSet<>();
@@ -80,13 +79,13 @@ public class Producer implements Callable<Set<Page>> {
                         pages.add(new Page(url, data));
                     }
                 }
-                putPages(pages);
+                if (pages.size() > 0)
+                    putPages(pages);
                 Thread.sleep(this.queryInterval);
             }
         }
         catch (InterruptedException e) {
             System.out.println(String.format("Producer thread %d is interrupted.", this.threadNumber));
-            throw e;
         }
     }
 }

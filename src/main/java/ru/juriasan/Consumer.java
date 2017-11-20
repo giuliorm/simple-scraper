@@ -14,20 +14,16 @@ public class Consumer implements Runnable {
     private long queryInterval;
     private int threadNumber;
     private List<Producer> subscriptions;
-
     private Set<String> words;
-    private Set<Character> characters;
 
     public Consumer(int threadNumber, long queryIntervalMillis,
                     Set<String> words,
-                    Set<Character> characters,
                     Producer... subscriptions) {
         this.threadNumber = threadNumber;
         this.queryInterval = queryIntervalMillis;
         output = new LinkedBlockingQueue<>();
         this.subscriptions = new LinkedList<>(Arrays.asList(subscriptions));
         this.words = words;
-        this.characters = characters;
     }
 
     public synchronized void subscribe(Producer producer) {
