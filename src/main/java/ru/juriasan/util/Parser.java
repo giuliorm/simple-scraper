@@ -65,19 +65,20 @@ public class Parser {
 
     private void parseComment() throws Exception {
         ch++;
+        boolean stop = false;
         if (html[ch] != DASH || html[ch + 1] != DASH)
             invalidDocument();
-        while(true) {
+        while(!stop) {
             switch (html[ch]) {
-                case EOF: invalidDocument();
+                case EOF: invalidDocument(); break;
                 case NODE_END:
                     if (html[ch - 1] != DASH || html[ch - 2] != DASH)
                         invalidDocument();
                     else {
                         ch++;
-                        return;
+                        stop = true;
                     }
-                default: ch++;
+                default: ch++; break;
             }
         }
     }
@@ -94,13 +95,17 @@ public class Parser {
                 case NODE_BEGIN:
                     if (!end || html[ch + 1] != SLASH)
                         invalidDocument();
+                    break;
                 case SLASH:
-                    if (!end)
-                        invalidDocument();
+                    if (!end) invalidDocument();
+                    ch++;
+                    break;
                 case EOF:
                     invalidDocument();
+                    break;
                 case NODE_END:
                     if (html[ch - 1] != NODE_BEGIN) { ch++; return; } else invalidDocument();
+                    break;
                 default: ch++; break;
             }
         }
