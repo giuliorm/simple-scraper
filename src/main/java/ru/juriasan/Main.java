@@ -16,6 +16,7 @@ public class Main {
             CLI cli = new CLI(args);
             List<String> urls = cli.getUrls();
             int threads = 10;
+            int queryInterval = 500;
             if (urls.size() < threads)
                 threads = urls.size();
             int urlsPerThreads = urls.size() / threads;
@@ -24,10 +25,10 @@ public class Main {
             int urlInd = 0;
             while(urlInd < urls.size()) {
                 String[] suburls = urls.subList(urlInd, urlInd + urlsPerThreads - 1).toArray(new String[urlsPerThreads]);
-                Producer p = new Producer(urlInd / urlsPerThreads, 2000, suburls);
+                Producer p = new Producer(urlInd / urlsPerThreads, queryInterval, suburls);
                 producers.add(p);
                 urlInd = urlInd + urlsPerThreads;
-                Consumer c = new Consumer(urlInd / urlsPerThreads, 2000,
+                Consumer c = new Consumer(urlInd / urlsPerThreads, queryInterval,
                         new HashSet<>(cli.getWords()), p);
                 consumers.add(c);
             }
@@ -37,7 +38,8 @@ public class Main {
                 producersExecutor.execute(p);
             for (Consumer c : consumers)
                 consumersExecutor.execute(c);
-            while(true) {
+            while(true);
+            /*while(true) {
                 for (Consumer c : consumers)
                     for (Data data : c.getData()) {
                         System.out.println(String.format("------- %s -------", data.getUrl()));
@@ -45,7 +47,7 @@ public class Main {
                             System.out.println(String.format("    %s: %d", word, data.getWordCount().get(word)));
                         }
                     }
-            }
+            }*/
         }
         catch (Exception ex) {
             ex.printStackTrace();

@@ -74,7 +74,7 @@ public class Producer implements Runnable {
                 for (String url : urls) {
                     String data = getData(url);
                     if (data != null) {
-                        System.out.println(String.format("Thread %d has downloaded data from %s",
+                        System.out.println(String.format("Producer thread %d has downloaded data from %s",
                                 this.threadNumber, url));
                         pages.add(new Page(url, data));
                     }
@@ -85,7 +85,7 @@ public class Producer implements Runnable {
             }
         }
         catch (InterruptedException e) {
-            System.out.println(String.format("Producer thread %d is interrupted.", this.threadNumber));
+            System.out.println(String.format("Producer thread %d is interrupted and exiting.", this.threadNumber));
         }
     }
 }

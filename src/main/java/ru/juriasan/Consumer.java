@@ -10,7 +10,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class Consumer implements Runnable {
 
-    private BlockingQueue<Set<Data>> output;
     private long queryInterval;
     private int threadNumber;
     private List<Producer> subscriptions;
@@ -21,7 +20,6 @@ public class Consumer implements Runnable {
                     Producer... subscriptions) {
         this.threadNumber = threadNumber;
         this.queryInterval = queryIntervalMillis;
-        output = new LinkedBlockingQueue<>();
         this.subscriptions = new LinkedList<>(Arrays.asList(subscriptions));
         this.words = words;
     }
@@ -34,14 +32,6 @@ public class Consumer implements Runnable {
         this.subscriptions.remove(producer);
     }
 
-    private void putData(Set<Data> data) throws InterruptedException {
-        this.output.put(data);
-    }
-
-    public Set<Data> getData() throws InterruptedException {
-        return output.take();
-    }
-
     private Data handlePage(Page page) {
         try {
             String pageData = page.getData();
@@ -50,7 +40,6 @@ public class Consumer implements Runnable {
             return new Data(page.getUrl(), parser.getWordsCount(), parser.getSymbolsCount());
         }
         catch (Exception ex) {
-            ex.printStackTrace();
             return null;
         }
     }
@@ -61,17 +50,27 @@ public class Consumer implements Runnable {
             while (true) {
                 for (Producer producer : this.subscriptions) {
                     Set<Page> pages = producer.getPages();
-                    Set<Data> data = new HashSet<>();
                     for (Page page : pages) {
-                        data.add(handlePage(page));
+                        Data d = handlePage(page);
+                        if (d != null) {
+                            System.out.println(String.format("Consumer thread %d: ------%s-------",
+                                    this.threadNumber, d.getUrl()));
+                            for(String word : d.getWordCount().keySet())
+                                System.out.print(String.format("%s: %d, ", word, d.getWordCount().get(word)));
+                            System.out.println();
+                            for(Character c : d.getSymbolsCount().keySet())
+                                System.out.print(String.format("%c: %d", c, d.getSymbolsCount().get(c)));
+                        }
+                        else
+                            System.out.println(String.format("Consumer thread %d: data from url %s is null",
+                                    this.threadNumber, page.getUrl()));
                     }
-                    putData(data);
                 }
                 Thread.sleep(queryInterval);
             }
         }
         catch (InterruptedException ex) {
-            System.out.println(String.format("Producer thread %d is interrupted.", this.threadNumber));
+            System.out.println(String.format("Consumer thread %d is interrupted and exiting.", this.threadNumber));
         }
         catch (Exception ex) {
             ex.printStackTrace();
