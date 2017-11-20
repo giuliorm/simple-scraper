@@ -2,8 +2,6 @@ package ru.juriasan.util;
 
 import java.lang.reflect.Array;
 import java.util.*;
-import java.util.function.BiFunction;
-import java.util.function.BooleanSupplier;
 import java.util.regex.Pattern;
 
 public class Parser {
@@ -21,7 +19,7 @@ public class Parser {
     private static final char DASH = '-';
 
     private <K> Map<K, Integer> buildCountMap(Collection<K> values) {
-        Map<K, Integer> map = new HashMap<>();
+        Map<K, Integer> map = new HashMap<K, Integer>();
         if (values == null)
             return map;
 
@@ -42,10 +40,10 @@ public class Parser {
         }
     }
 
-    public Parser(String html, Set<String> words, Set<Character> symbols) {
+    public Parser(String html, Set<String> words) {
         this.html = html.toCharArray();
         this.wordsCount = buildCountMap(words);
-        this.symbolsCount = buildCountMap(symbols);
+        this.symbolsCount = new HashMap<Character, Integer>();
     }
 
     public Map<String, Integer> getWordsCount() {
@@ -56,8 +54,9 @@ public class Parser {
         return cloneMap(symbolsCount);
     }
 
-    private boolean isLetter(char letter) {
-        return 'a' <=  letter && letter <= 'z' || 'A' <= letter && letter <= 'Z';
+    private boolean isLetterOrDigit(char letter) {
+        return 'a' <=  letter && letter <= 'z' || 'A' <= letter && letter <= 'Z' ||
+                '0' <= letter && letter <= '9';
     }
 
     private void invalidDocument() throws Exception {
@@ -95,45 +94,58 @@ public class Parser {
                 case NODE_BEGIN:
                     if (!end || html[ch + 1] != SLASH)
                         invalidDocument();
+                case SLASH:
+                    if (!end)
+                        invalidDocument();
                 case EOF:
-                 invalidDocument();
+                    invalidDocument();
                 case NODE_END:
                     if (html[ch - 1] != NODE_BEGIN) { ch++; return; } else invalidDocument();
                 default: ch++; break;
             }
         }
     }
-
-    private StringBuilder handleChar(StringBuilder word) throws Exception {
-        if (isLetter(html[ch]))
-            word.append(html[ch]);
-        else {
-            String w = word.toString();
-            word = new StringBuilder();
-            if (wordsCount.containsKey(w)) {
-                wordsCount.put(w, wordsCount.get(w) + 1);
-            }
-        }
+    private void countSymbol() throws Exception {
         if (symbolsCount.containsKey(html[ch]))
             symbolsCount.put(html[ch], symbolsCount.get(html[ch]) + 1);
         else
-            symbolsCount.put(html[ch], 0);
+            symbolsCount.put(html[ch], 1);
+    }
+
+    private StringBuilder handleNotLetterOrDigit(StringBuilder word) throws  Exception {
+        String w = word.toString();
+        word = new StringBuilder();
+        if (wordsCount.containsKey(w)) {
+            wordsCount.put(w, wordsCount.get(w) + 1);
+        }
+        return word;
+    }
+
+    private StringBuilder handleLetterOrDigit(StringBuilder word) throws Exception {
+        word.append(html[ch]);
         return word;
     }
 
     private void parseNode() throws Exception {
         parseNodeName(false);
         StringBuilder word = new StringBuilder();
-        while(true) {
+        boolean stop = false;
+        while(!stop) {
             switch (html[ch]) {
                 case NODE_BEGIN:
+                    if (word.length() > 0)
+                        handleNotLetterOrDigit(word);
                     if (html[ch + 1] == SLASH) {
                         parseNodeName(true);
-                        return;
+                        stop = true;
                     } else parseNode();
                     break;
                 default: {
-                    word = handleChar(word);
+                    if (isLetterOrDigit(html[ch]))
+                        word = handleLetterOrDigit(word);
+                    else
+                        word = handleNotLetterOrDigit(word);
+                    countSymbol();
                     ch++;
                 } break;
             }
@@ -144,14 +156,20 @@ public class Parser {
         if (html.length == 0 || html[ch] == EOF)
             return;
         StringBuilder word = new StringBuilder();
-        while(html[ch] != EOF) {
+        while(ch < html.length && html[ch] != EOF) {
             switch (html[ch]) {
                 case NODE_BEGIN: parseNode(); break;
                 default: {
-                    word = handleChar(word);
+                    if (isLetterOrDigit(html[ch]))
+                        word = handleLetterOrDigit(word);
+                    else
+                        word = handleNotLetterOrDigit(word);
+                    countSymbol();
                     ch++;
                 } break;
             }
         }
+        if (word.length() > 0)
+            handleNotLetterOrDigit(word);
     }
 }

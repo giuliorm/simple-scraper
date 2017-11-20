@@ -49,7 +49,7 @@ public class Consumer implements Runnable {
     private Data handlePage(Page page) {
         try {
             String pageData = page.getData();
-            Parser parser = new Parser(pageData, words, characters);
+            Parser parser = new Parser(pageData, words);
             parser.parse();
             return new Data(page.getUrl(), parser.getWordsCount(), parser.getSymbolsCount());
         }
