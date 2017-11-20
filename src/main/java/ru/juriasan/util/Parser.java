@@ -7,13 +7,14 @@ import java.util.regex.Pattern;
 public class Parser {
 
     private Map<String, Integer> wordsCount;
+    private Set<String> words;
+    private Deque<String> tagStack = new ArrayDeque<>();
     private Map<Character, Integer> symbolsCount;
     private char[] html;
     //currentCharIndex
     private int ch = 0;
     private static final char NODE_BEGIN = '<';
     private static final char NODE_END ='>';
-    private static final char EOF = '0';
     private static final char EXCLAMATION = '!';
     private static final char SLASH = '/';
     private static final char DASH = '-';
@@ -42,6 +43,7 @@ public class Parser {
 
     public Parser(String html, Set<String> words) {
         this.html = html.toCharArray();
+        this.words = words;
         this.wordsCount = buildCountMap(words);
         this.symbolsCount = new HashMap<Character, Integer>();
     }
@@ -60,7 +62,7 @@ public class Parser {
     }
 
     private void invalidDocument() throws Exception {
-        throw new Exception("Document is invalid");
+        throw new Exception(String.format("Document is invalid at ch %d", ch));
     }
 
     private void parseComment() throws Exception {
@@ -70,43 +72,50 @@ public class Parser {
             invalidDocument();
         while(!stop) {
             switch (html[ch]) {
-                case EOF: invalidDocument(); break;
                 case NODE_END:
-                    if (html[ch - 1] != DASH || html[ch - 2] != DASH)
-                        invalidDocument();
-                    else {
                         ch++;
                         stop = true;
-                    }
                 default: ch++; break;
             }
         }
     }
 
-    private void parseNodeName(boolean end) throws Exception {
+    private void parseSingleNode() throws Exception {
+        boolean stop = false;
+        ch++;
+        if (html[ch] == NODE_END)
+            invalidDocument();
+        while(!stop) {
+            switch (html[ch]) {
+                case NODE_END:
+                    stop = true;
+                    break;
+                default:
+                    ch++;
+
+            }
+        }
+    }
+    private String parseNodeName(boolean end) throws Exception {
         if (html[ch] != NODE_BEGIN)
             invalidDocument();
         ch++;
+        StringBuilder tagName = new StringBuilder();
+        if(!end && html[ch] == SLASH)
+            invalidDocument();
+
         while(true) {
             switch(html[ch]) {
                 case EXCLAMATION:
-                    parseComment();
-                    break;
-                case NODE_BEGIN:
-                    if (!end || html[ch + 1] != SLASH)
-                        invalidDocument();
-                    break;
-                case SLASH:
-                    if (!end) invalidDocument();
-                    ch++;
-                    break;
-                case EOF:
-                    invalidDocument();
+                    if (html[ch + 1] == DASH)
+                        parseComment();
+                    else
+                        parseSingleNode();
                     break;
                 case NODE_END:
-                    if (html[ch - 1] != NODE_BEGIN) { ch++; return; } else invalidDocument();
+                    if (html[ch - 1] != NODE_BEGIN) { ch++; return tagName.toString(); } else invalidDocument();
                     break;
-                default: ch++; break;
+                default: tagName.append(ch); ch++; break;
             }
         }
     }
@@ -118,10 +127,11 @@ public class Parser {
     }
 
     private StringBuilder handleNotLetterOrDigit(StringBuilder word) throws  Exception {
-        String w = word.toString();
+        String w = word.toString().toLowerCase();
         word = new StringBuilder();
-        if (wordsCount.containsKey(w)) {
-            wordsCount.put(w, wordsCount.get(w) + 1);
+        Integer value = wordsCount.getOrDefault(w, null);
+        if (words.size() == 0 || words.contains(w)) {
+            wordsCount.put(w, value == null ? 1 : value + 1);
         }
         return word;
     }
@@ -136,6 +146,8 @@ public class Parser {
         StringBuilder word = new StringBuilder();
         boolean stop = false;
         while(!stop) {
+            if (ch >= html.length)
+                return;
             switch (html[ch]) {
                 case NODE_BEGIN:
                     if (word.length() > 0)
@@ -158,10 +170,10 @@ public class Parser {
     }
 
     public void parse() throws Exception {
-        if (html.length == 0 || html[ch] == EOF)
+        if (html.length == 0)
             return;
         StringBuilder word = new StringBuilder();
-        while(ch < html.length && html[ch] != EOF) {
+        while(ch < html.length) {
             switch (html[ch]) {
                 case NODE_BEGIN: parseNode(); break;
                 default: {
