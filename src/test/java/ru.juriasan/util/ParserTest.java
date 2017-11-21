@@ -1,7 +1,6 @@
 package ru.juriasan.util;
 
 
-import com.sun.xml.internal.ws.policy.sourcemodel.AssertionData;
 import org.junit.Ignore;
 import org.testng.Assert;
 import org.testng.annotations.Test;

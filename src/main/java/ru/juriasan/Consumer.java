@@ -5,8 +5,6 @@ import ru.juriasan.domain.Page;
 import ru.juriasan.util.Parser;
 
 import java.util.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 public class Consumer implements Runnable {
 
@@ -58,15 +56,16 @@ public class Consumer implements Runnable {
                             for(String word : d.getWordCount().keySet())
                                 System.out.print(String.format("%s: %d, ", word, d.getWordCount().get(word)));
                             System.out.println();
-                            for(Character c : d.getSymbolsCount().keySet())
-                                System.out.print(String.format("%c: %d", c, d.getSymbolsCount().get(c)));
+                            //for(Character c : d.getSymbolsCount().keySet())
+                           //     System.out.print(String.format("%c: %d, ", c, d.getSymbolsCount().get(c)));
                         }
                         else
                             System.out.println(String.format("Consumer thread %d: data from url %s is null",
                                     this.threadNumber, page.getUrl()));
                     }
+                    Thread.sleep(queryInterval);
                 }
-                Thread.sleep(queryInterval);
+
             }
         }
         catch (InterruptedException ex) {
