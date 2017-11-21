@@ -40,6 +40,8 @@ public class ParserTest {
             p.parse();
             for( String word : p.getWordsCount().keySet())
                 System.out.println(String.format("%s: %d", word, p.getWordsCount().get(word)));
+            for (Character c : p.getSymbolsCount().keySet())
+                System.out.print(String.format("%c: %d,", c, p.getSymbolsCount().get(c)));
         }
         catch (Exception ex) {
             ex.printStackTrace();
