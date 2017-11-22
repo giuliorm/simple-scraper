@@ -2,7 +2,7 @@ package ru.juriasan;
 
 import ru.juriasan.domain.Data;
 import ru.juriasan.domain.Page;
-import ru.juriasan.util.Parser;
+import ru.juriasan.util.parser.InMemoryParser;
 
 import java.util.*;
 
@@ -33,13 +33,14 @@ public class Consumer implements Runnable {
     private Data handlePage(Page page) {
         try {
             String pageData = page.getData();
-            Parser parser = new Parser(pageData, words);
-            parser.parse();
-            return new Data(page.getUrl(), parser.getWordsCount(), parser.getSymbolsCount());
+            //InMemoryParser parser = new InMemoryParser(pageData, words);
+            ///parser.parse();
+           /// return new Data(page.getUrl(), parser.getWordsCount(), parser.getSymbolsCount());
         }
         catch (Exception ex) {
             return null;
         }
+        return null;
     }
 
     @Override
