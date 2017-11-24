@@ -105,7 +105,7 @@ public class InMemoryParserTest {
     @Test
     public void parserValidDocTest() {
         String html = "<html><node1>node 1</node1> html</html>";
-        InMemoryParser p = new InMemoryParser(html.toString());
+        InMemoryParser p = new InMemoryParser(html);
         try {
             Set<NodeIndex> nodes = p.parse();
             for(NodeIndex nodeIndex : nodes) {

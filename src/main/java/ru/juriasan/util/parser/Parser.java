@@ -35,6 +35,10 @@ public abstract class Parser {
                 new HashSet<>();
     }
 
+    protected Set<Entity> nil() {
+        return new LinkedHashSet<>();
+    }
+
     protected boolean isLetter(char symbol) {
         return 'a' <=  symbol && symbol <= 'z' || 'A' <= symbol && symbol <= 'Z';
     }
@@ -48,73 +52,98 @@ public abstract class Parser {
     }
 
     public Set<NodeIndex> parse() throws Exception {
-        Set<Index> rootText = new HashSet<>();
-        Set<NodeIndex> nodes = new HashSet<>();
-        Index currentText = null;
-        while(!end()) {
+        Set<Entity> entities = nil();
+        StringBuilder rootText = new StringBuilder();
+        do {
             switch (current()) {
                 case NODE_BEGIN:
-                    if (currentText != null) {
-                        currentText.setEnd(position() - 1);
-                        rootText.add(currentText);
-                    }
-                    //nodes = parseNode();
-                    Set<Entity> entities = parseSingle();
+                    Set<Entity> tree = parseSingle();
+                    if (tree != null)
+                        entities.addAll(tree);
                     break;
                 default:
-                    if (currentText == null) {
-                        currentText = new Index();
-                        currentText.setStart(position());
-                    }
+                    if (!tagStack.isEmpty())
+                        parseText(rootText);
+                    break;
             }
-        }
-        return nodes;
+        } while(!end());
+        return null;
     }
 
-    protected Entity textEntity(StringBuilder sb) {
-        if (sb.length() > 0) {
+    protected void parseText(StringBuilder sb) {
+        sb.append(current());
+        move();
+    }
+
+    protected Set<Entity> textEntity(String text) {
+        if (text == null)
+            return null;
+        if (text.length() > 0) {
             Entity textEntity = new Entity();
-            textEntity.setValue(sb.toString());
-            return textEntity;
+            textEntity.setType(EntityType.NODE_VALUE);
+            textEntity.setValue(text);
+            Set<Entity> entitySet = nil();
+            entitySet.add(textEntity);
+            return entitySet;
         }
         return null;
     }
 
+    protected Set<Entity> parseEndNode(Entity entity) throws  Exception {
+        Set<Entity> entities = nil();
+        entities.add(entity);
+        String last = tagStack.pollFirst();
+        if (!Objects.equals(last, entity.getValue()))
+            exception("Document markup is invalid!");
+        return entities;
+    }
+
+    protected Set<Entity> parseStartNode(Entity entity) throws Exception {
+        Set<Entity> entities = null;
+        if (voidElements.contains(entity.getValue()))
+            entities = nil();
+        else {
+            tagStack.push(entity.getValue());
+            entities = parseSingle();
+        }
+        entities.add(entity);
+        //Set<Entity> textEntity = textEntity(text);
+        //if (textEntity != null)
+        //    entities.addAll(textEntity);
+        return entities;
+    }
+
+    protected  Set<Entity> parseNode(Entity entity, String nodeText) throws Exception {
+        Set<Entity> entities = null;
+        switch (entity.getType()) {
+            case START_NODE:
+                entities = parseStartNode(entity);
+                break;
+            case END_NODE:
+                entities = parseEndNode(entity);
+                break;
+        }
+
+        Set<Entity> textEntity = textEntity(nodeText);
+        if (entities != null && textEntity != null)
+            entities.addAll(textEntity);
+        return entities;
+    }
+
     protected Set<Entity> parseSingle() throws Exception {
         StringBuilder text  = new StringBuilder();
-        Set<Entity> entities;
-        while(!end()) {
+        do {
             switch (current()) {
                 case NODE_BEGIN:
                     Entity entity = parseNodeName();
-                    if (entity == null) {
-                        text.append(current());
-                        move();
-                    } else {
-                        switch (entity.getType()) {
-                            case START_NODE:
-                                entities = voidElements.contains(entity.getValue()) ?
-                                        new HashSet<>() : parseSingle();
-                                entities.add(entity);
-                                Entity textEntity = textEntity(text);
-                                if (textEntity != null)
-                                    entities.add(textEntity);
-                                return entities;
-                            case END_NODE:
-                                entities = new HashSet<>();
-                                entities.add(entity);
-                                return entities;
-                        }
-                    }
-
-                    break;
+                    if (entity != null)
+                        return parseNode(entity, text.toString());
                 default:
-                    text.append(current());
-                    move();
+                    parseText(text);
                     break;
             }
-        }
-        return  null;
+        } while(!end());
+        return textEntity(text.toString());
     }
 
     //protected Set<Entity> parseNode() throws Exception {
